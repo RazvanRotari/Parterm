@@ -1,17 +1,15 @@
 [package]
-name = "term_mux"
+name = "parterm"
 version = "0.1.1"
-authors = ["Matthias Devlamynck <matthias.devlamynck@mailoo.org>"]
+authors = ["Razvan Rotari <razvanrotari@posteo.net>"]
 license = "MIT"
 
 [dependencies]
 libc = "0"
 termion = "1"
 chan-signal = "0"
+clap = "2.33.3"
 
 [[bin]]
-name = "term_mux"
+name = "parterm"
 doc = false
-
-[lib]
-doc = true
