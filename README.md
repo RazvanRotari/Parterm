@@ -1,5 +1,7 @@
 # Parterm
 
+[![Rust](https://github.com/RazvanRotari/Parterm/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/RazvanRotari/Parterm/actions/workflows/rust.yml)
+
 Remote control for your terminal. Allows you to execute arbitary commands in a different terminal. One usecase is to trigger the compilation in a different terminal from your editor.
 
 This project only supports GNU/Linux at the moment. 
