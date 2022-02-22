@@ -4,6 +4,9 @@ name = "parterm"
 version = "0.1.1"
 authors = ["Razvan Rotari <razvanrotari@posteo.net>"]
 license = "MIT"
+homepage = "https://github.com/RazvanRotari/Parterm"
+categories = ["command-line-utilities"]
+
 
 [dependencies]
 libc = "0.2"

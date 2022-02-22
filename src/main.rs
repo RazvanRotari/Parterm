@@ -1,12 +1,3 @@
-extern crate anyhow;
-extern crate clap;
-extern crate errno;
-extern crate libc;
-extern crate nix;
-extern crate parterm;
-extern crate termion;
-
-
 use anyhow::{Result};
 use clap::{App, Arg, SubCommand};
 use flexi_logger::*;
