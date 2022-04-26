@@ -1,19 +1,16 @@
-use anyhow::{Result};
+use anyhow::Result;
 use clap::{App, Arg, SubCommand};
 use flexi_logger::*;
-use log::{info};
+use log::info;
 
 static DEFAULT_NAME: &str = "default";
 
-
-
-
-
 fn main() -> Result<()> {
+    let fileSpec: FileSpec = FileSpec::default().directory("/home/razvan/.local/share/parterm");
     Logger::try_with_str("info")?
-        .log_to_file(FileSpec::default()) // write logs to file
+        .log_to_file(fileSpec) // write logs to file
         // .duplicate_to_stderr(Duplicate::Info) // print warnings and errors also to the console
-            .format(with_thread)
+        .format(with_thread)
         .start()?;
 
     let matches = App::new("parterm")
@@ -42,14 +39,23 @@ fn main() -> Result<()> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("server").about("").arg(
-                Arg::with_name("name")
-                    .help("Name of the connection")
-                    .short("n")
-                    .long("name")
-                    .takes_value(true)
-                    .default_value(DEFAULT_NAME),
-            ),
+            SubCommand::with_name("server")
+                .about("")
+                .arg(
+                    Arg::with_name("name")
+                        .help("Name of the connection")
+                        .short("n")
+                        .long("name")
+                        .takes_value(true)
+                        .default_value(DEFAULT_NAME),
+                )
+                .arg(
+                    Arg::with_name("cmd")
+                        .help("Command to be executed after the server starts")
+                        .short("c")
+                        .long("command")
+                        .takes_value(true),
+                ),
         )
         .get_matches();
 
@@ -75,7 +81,7 @@ fn main() -> Result<()> {
             "parterm_{}.pipe",
             server_sub.value_of("name").unwrap_or(DEFAULT_NAME)
         );
-        if let Err(err) = parterm::parterm::server(path) {
+        if let Err(err) = parterm::parterm::server(path, server_sub.value_of("cmd")) {
             info!("Error {}", err);
         }
     }

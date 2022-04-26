@@ -90,7 +90,7 @@ pub fn client(value: String, name: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn server(name: String) -> Result<()> {
+pub fn server(name: String, program: Option<&str>) -> Result<()> {
     let mut tty_output = get_tty().unwrap().into_raw_mode().unwrap();
     let mut tty_input = tty_output.try_clone().unwrap();
 
@@ -151,14 +151,16 @@ pub fn server(name: String) -> Result<()> {
             }
         }
     });
-
+    if let Some(program) = program {
+        let cmd = format!("{}\n", program);
+        cmd_sender.send(Vec::from(cmd));
+    }
     //Read commands from pipe and push it to the channel
     spawn_with_name("ReadCmdsRemote", move || {
         read_comands_from_pipe(cmd_sender, &name)
     });
 
     if let Err(e) = handle.join() {
-
         panic::resume_unwind(e)
     }
 
