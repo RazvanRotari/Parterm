@@ -8,10 +8,14 @@ This project only supports GNU/Linux at the moment.
 
 # Installation
 
-You can use `cargo install` to install this project. It will compile the binary `parterm` and install it in the `~/.cargo/bin` folder. Make sure this folder is in your path if you want to be able to run it directly.
+### Cargo
 
+If you already have a Rust environment set up, you can use the `cargo install` command:
 
-This project is not ready to be used yet. Once the project is ready, it will be published on crates.io and you will be able to install the latest release with a simple `cargo install parterm`.
+    cargo install parterm
+
+Cargo will build the `parterm` binary and place it in `$HOME/.cargo`.
+
 
 # Usage
 

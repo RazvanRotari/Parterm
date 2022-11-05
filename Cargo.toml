@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "parterm"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Razvan Rotari <razvanrotari@posteo.net>"]
 license = "MIT"
 homepage = "https://github.com/RazvanRotari/Parterm"
