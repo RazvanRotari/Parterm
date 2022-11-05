@@ -4,7 +4,7 @@ use crate::shell::util::get_shell;
 use anyhow::{bail, Result};
 use crossbeam_channel::select;
 use libc::c_int;
-use log::{error, info};
+use log::{debug, error};
 use nix::sys::stat;
 use nix::unistd;
 use std::env::temp_dir;
@@ -54,17 +54,13 @@ fn create_pipe(path: &path::PathBuf) -> Result<()> {
 fn get_pipe(name: &str, write: bool) -> Result<File> {
     let dir = temp_dir();
     let pipe_file = dir.join(path::PathBuf::from(name));
-    info!("pipe_file {:?}", pipe_file);
+    debug!("pipe_file {:?}", pipe_file);
     if !pipe_file.exists() {
         if write {
             bail!("No server open for {} ", name);
         }
         create_pipe(&pipe_file)?
     }
-    info!(
-        "before open {} read {} create {}, write {}",
-        write, !write, !write, write
-    );
     let mut option = OpenOptions::new();
     let pipe = option
         .read(!write)
@@ -72,20 +68,21 @@ fn get_pipe(name: &str, write: bool) -> Result<File> {
         .write(write)
         .open(pipe_file)?;
 
-    info!("Pipe open");
+    debug!("Pipe open");
     Ok(pipe)
 }
 
 fn delete_pipe(name: &str) -> std::io::Result<()> {
     let dir = temp_dir();
     let pipe_file = dir.join(path::PathBuf::from(name));
-    info!("remove pipe_file {:?}", pipe_file);
+    debug!("remove pipe_file {:?}", pipe_file);
     std::fs::remove_file(pipe_file)
 }
 
 pub fn client(value: String, name: &str) -> Result<()> {
     let mut pipe = get_pipe(name, true)?;
-    pipe.write(value.as_bytes())?;
+    let written = pipe.write(value.as_bytes())?;
+    assert_eq!(written, value.as_bytes().len());
     pipe.sync_all()?;
     Ok(())
 }
@@ -102,10 +99,9 @@ pub fn server(name: String, program: Option<&str>) -> Result<()> {
     let (val_sender, val_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = channel();
 
     let handle: thread::JoinHandle<Result<(), anyhow::Error>> = thread::spawn(move || loop {
-        match pipe(&mut pty_input, &mut tty_output) {
-            Err(err) => bail!(err),
-            _ => (),
-        };
+        if let Err(err) = pipe(&mut pty_input, &mut tty_output) {
+            bail!(err)
+        }
     });
 
     spawn_with_name("ReadCmdTerm", move || loop {
@@ -129,7 +125,7 @@ pub fn server(name: String, program: Option<&str>) -> Result<()> {
         use signal_hook::consts::signal;
         let signal = notify(&[signal::SIGWINCH, signal::SIGTERM]).unwrap();
         let handle_signal = |signal_value| {
-            info!("Handle signal {}", signal_value);
+            debug!("Handle signal {}", signal_value);
             match signal_value {
                 signal::SIGWINCH => {
                     signal.recv().unwrap();
@@ -153,7 +149,7 @@ pub fn server(name: String, program: Option<&str>) -> Result<()> {
     });
     if let Some(program) = program {
         let cmd = format!("{}\n", program);
-        cmd_sender.send(Vec::from(cmd));
+        cmd_sender.send(Vec::from(cmd))?;
     }
     //Read commands from pipe and push it to the channel
     spawn_with_name("ReadCmdsRemote", move || {
@@ -171,17 +167,17 @@ pub fn server(name: String, program: Option<&str>) -> Result<()> {
 }
 
 fn read_comands_from_pipe(cmd_sender: Sender<Vec<u8>>, name: &str) -> Result<()> {
-    info!("read_comands");
+    debug!("read_comands");
     let mut input = get_pipe(name, false)?;
     let mut data = [0; 256];
     loop {
         match input.read(&mut data) {
             Ok(count) => {
-                if count <= 0 {
+                if count == 0 {
                     let ten_millis = Duration::from_millis(1);
                     thread::sleep(ten_millis);
                 }
-                info!("count {}", count);
+                debug!("count {}", count);
                 let (sub_slice, _) = data.split_at(count);
                 if let Err(err) = cmd_sender.send(Vec::from(sub_slice)) {
                     error!("{}", err);
@@ -200,20 +196,14 @@ fn handle_slave_output(
     mut pty_output: File,
 ) -> std::io::Result<()> {
     loop {
-        match cmd_receiver.try_recv() {
-            Ok(val) => {
-                pty_output.write_all(val.as_slice())?;
-                pty_output.flush()?;
-            }
-            _ => (),
+        if let Ok(val) = cmd_receiver.try_recv() {
+            pty_output.write_all(val.as_slice())?;
+            pty_output.flush()?;
         }
 
-        match val_receiver.try_recv() {
-            Ok(val) => {
-                pty_output.write_all(val.as_slice())?;
-                pty_output.flush()?;
-            }
-            _ => (),
+        if let Ok(val) = val_receiver.try_recv() {
+            pty_output.write_all(val.as_slice())?;
+            pty_output.flush()?;
         }
     }
 }
@@ -225,7 +215,7 @@ fn pipe(input: &mut File, output: &mut File) -> Result<()> {
     let count = input.read(&mut packet)?;
 
     let read = &packet[..count];
-    output.write_all(&read)?;
+    output.write_all(read)?;
     output.flush()?;
 
     Ok(())

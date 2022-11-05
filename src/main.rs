@@ -1,17 +1,14 @@
 use anyhow::Result;
 use clap::{App, Arg, SubCommand};
-use flexi_logger::*;
 use log::info;
 
 static DEFAULT_NAME: &str = "default";
 
 fn main() -> Result<()> {
-    let fileSpec: FileSpec = FileSpec::default().directory("/home/razvan/.local/share/parterm");
-    Logger::try_with_str("info")?
-        .log_to_file(fileSpec) // write logs to file
-        // .duplicate_to_stderr(Duplicate::Info) // print warnings and errors also to the console
-        .format(with_thread)
-        .start()?;
+    flexi_logger::Logger::try_with_env()
+        .unwrap()
+        .start()
+        .unwrap();
 
     let matches = App::new("parterm")
         .version("0.1")
@@ -25,6 +22,7 @@ fn main() -> Result<()> {
                 .arg(
                     Arg::with_name("cmd")
                         .help("<command>")
+                        .help("Command to run by the server")
                         .required(true)
                         .takes_value(true)
                         .last(true),
@@ -84,6 +82,8 @@ fn main() -> Result<()> {
         if let Err(err) = parterm::parterm::server(path, server_sub.value_of("cmd")) {
             info!("Error {}", err);
         }
+        return Ok(());
     }
+
     Ok(())
 }

@@ -20,7 +20,7 @@ errno = "0.2.8"
 nix = "0.23.0"
 flexi_logger = "0.22.1"
 log = "0.4.14"
-crossbeam-channel = "0.5.1"
+crossbeam-channel = "0.5.6"
 signal-hook = "0.3.13"
 
 [[bin]]

@@ -1,6 +1,3 @@
-extern crate libc;
-extern crate termion;
-
 pub mod pty {
     //! pty low level handling
 
@@ -41,10 +38,10 @@ pub mod pty {
         /// given size in a newly created pty.
         /// Returns a Pty representing the master side controlling the pty.
         pub fn spawn(shell: &str, size: &Size) -> Result<Pty, PtyError> {
-            let (master, slave) = openpty(&size)?;
+            let (master, slave) = openpty(size)?;
 
             let mut cmd = Command::new(&shell);
-                cmd.stdin(unsafe { Stdio::from_raw_fd(slave) })
+            cmd.stdin(unsafe { Stdio::from_raw_fd(slave) })
                 .stdout(unsafe { Stdio::from_raw_fd(slave) })
                 .stderr(unsafe { Stdio::from_raw_fd(slave) });
             unsafe {
@@ -56,7 +53,7 @@ pub mod pty {
                     file: unsafe { File::from_raw_fd(master) },
                 };
 
-                pty.resize(&size)?;
+                pty.resize(size)?;
 
                 Ok(pty)
             })
@@ -240,8 +237,8 @@ pub mod tui {
     }
 
     /// Returns the terminal current size
-    pub fn get_terminal_size() -> Result<Size, ()> {
-        let (width, height) = termion::terminal_size().map_err(|_| ())?;
+    pub fn get_terminal_size() -> anyhow::Result<Size> {
+        let (width, height) = termion::terminal_size()?;
         Ok(Size { width, height })
     }
 }
@@ -252,7 +249,6 @@ pub mod util {
     use libc;
     use std::env;
     use std::ffi::CStr;
-    use std::ptr;
 
     /// The informations in /etc/passwd corresponding to the current user.
     struct Passwd {
@@ -260,14 +256,11 @@ pub mod util {
     }
 
     /// Return the informations in /etc/passwd corresponding to the current user.
-    fn get_passwd() -> Result<Passwd, ()> {
+    fn get_passwd() -> anyhow::Result<Passwd> {
         unsafe {
             let passwd = libc::getpwuid(libc::getuid()).to_result()?;
 
-            let shell = CStr::from_ptr(passwd.pw_shell)
-                .to_str()
-                .map_err(|_| ())?
-                .to_string();
+            let shell = CStr::from_ptr(passwd.pw_shell).to_str()?.to_string();
 
             Ok(Passwd { shell })
         }
@@ -312,15 +305,15 @@ pub mod util {
         /// let result = 42;
         /// assert_eq!(Ok(42), result.to_result());
         /// ```
-        fn to_result(self) -> Result<Self::Target, ()>;
+        fn to_result(self) -> anyhow::Result<Self::Target>;
     }
 
     impl FromLibcResult for libc::c_int {
         type Target = libc::c_int;
 
-        fn to_result(self) -> Result<libc::c_int, ()> {
+        fn to_result(self) -> anyhow::Result<libc::c_int> {
             match self {
-                -1 => Err(()),
+                -1 => anyhow::bail!("libc function failled"),
                 res => Ok(res),
             }
         }
@@ -329,11 +322,15 @@ pub mod util {
     impl FromLibcResult for *mut libc::passwd {
         type Target = libc::passwd;
 
-        fn to_result(self) -> Result<libc::passwd, ()> {
-            if self == ptr::null_mut() {
-                return Err(());
+        #[allow(clippy::not_unsafe_ptr_arg_deref)]
+        fn to_result(self) -> anyhow::Result<libc::passwd> {
+            if self.is_null() {
+                anyhow::bail!("Fail to get the passwd")
             } else {
-                unsafe { Ok(*self) }
+                unsafe {
+                    let s = *self;
+                    Ok(s)
+                }
             }
         }
     }
