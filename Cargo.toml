@@ -6,7 +6,10 @@ authors = ["Razvan Rotari <razvanrotari@posteo.net>"]
 license = "MIT"
 homepage = "https://github.com/RazvanRotari/Parterm"
 categories = ["command-line-utilities"]
-
+description = "Remote control for your terminal"
+repository = "https://github.com/RazvanRotari/Parterm"
+readme = "README.md"
+keywords = ["terminal", "remote-control", "pty"]
 
 [dependencies]
 libc = "0.2"
