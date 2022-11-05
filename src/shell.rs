@@ -185,7 +185,7 @@ pub mod pty {
 
             // Reading
             let count = pty.read(&mut packet).unwrap();
-            let output = String::from_utf8_lossy(&packet[..count]).to_string();
+            let _output = String::from_utf8_lossy(&packet[..count]).to_string();
 
             // eprintln!("output: {}", output);
             // assert!(output.ends_with("$ "));
@@ -293,18 +293,6 @@ pub mod util {
     pub trait FromLibcResult: Sized {
         type Target;
 
-        /// The intented use is for the user to call map_err() after this function.
-        ///
-        /// # Examples
-        ///
-        /// ```
-        /// # use parterm::shell::util::FromLibcResult;
-        /// let result = -1;
-        /// assert_eq!(Err(()), result.to_result());
-        ///
-        /// let result = 42;
-        /// assert_eq!(Ok(42), result.to_result());
-        /// ```
         fn to_result(self) -> anyhow::Result<Self::Target>;
     }
 

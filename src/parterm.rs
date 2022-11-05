@@ -252,6 +252,6 @@ mod tests {
         thread::sleep(ten_millis);
         let mut pipe = get_pipe("test", true).unwrap();
         pipe.write("12345".as_bytes()).unwrap();
-        t.join();
+        t.join().unwrap();
     }
 }
